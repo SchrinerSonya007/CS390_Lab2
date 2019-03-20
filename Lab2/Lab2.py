@@ -36,7 +36,7 @@ TRANSFER_ROUNDS = 3
 
 
 
-#=============================<Helper Fuctions>=================================
+# ============================= < Helper Fuctions > ============================= #
 '''
 TODO: implement this.
 This function should take the tensor and re-convert it to an image.
@@ -52,7 +52,7 @@ def gramMatrix(x):
 
 
 
-#========================<Loss Function Builder Functions>======================
+# ============================= < Loss Function Builder Functions > ============================= #
 
 def styleLoss(style, gen):
     return None   #TODO: implement.
@@ -69,7 +69,7 @@ def totalLoss(x):
 
 
 
-#=========================<Pipeline Functions>==================================
+# ============================= < Pipeline Functions > ============================= #
 
 def getRawData():
     print("   Loading images.")
@@ -140,7 +140,7 @@ def styleTransfer(cData, sData, tData):
 
 
 
-#=========================<Main>================================================
+# ============================= < Main > =============================
 
 def main():
     print("Starting style transfer program.")
