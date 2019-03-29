@@ -140,7 +140,7 @@ def styleTransfer(cData, sData, tData):
 
 
 
-# ============================= < Main > =============================
+# ============================= < Main > ============================= #
 
 def main():
     print("Starting style transfer program.")
