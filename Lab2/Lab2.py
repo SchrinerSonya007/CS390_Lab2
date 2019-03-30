@@ -43,10 +43,10 @@ This function should take the tensor and re-convert it to an image.
 '''
 def deprocessImage(img):
     if K.image_data_format() == 'channels_first':
-        img = img.reshape((3, img_nrows, img_ncols))
+        img = img.reshape((3, CONTENT_IMG_H, CONTENT_IMG_W))
         img = img.transpose((1, 2, 0))
     else:
-        img = img.reshape((img_nrows, img_ncols, 3))
+        img = img.reshape((CONTENT_IMG_H, CONTENT_IMG_W, 3))
     # Remove zero-center by mean pixel
     img[:, :, 0] += 103.939
     img[:, :, 1] += 116.779
@@ -178,7 +178,7 @@ def styleTransfer(cData, sData, tData):
         minEst, tLoss, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20)
         print("      Loss: %f." % tLoss)
         img = deprocessImage(imgData.copy())
-        saveFile = FINAL_IMG_FILE + '_' + i + '.jpg'
+        saveFile = FINAL_IMG_FILE + '_%d' % i + '.jpg'
         imsave(saveFile, img)
         print("      Image saved to \"%s\"." % saveFile)
     print("   Transfer complete.")
