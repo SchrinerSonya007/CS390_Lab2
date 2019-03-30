@@ -67,16 +67,19 @@ def gramMatrix(x):
 def styleLoss(style, gen):
     G = gramMatrix(gen)
     A = gramMatrix(style)
-    return K.sum(K.square(G - A)) / (4. * 3^2 * (CONTENT_IMG_H * CONTENT_IMG_W)^2)
+    return K.sum(K.square(G - A)) / (4. * 3**2 * (CONTENT_IMG_H * CONTENT_IMG_W)**2)
 
 def contentLoss(content, gen):
     return K.sum(K.square(gramMatrix(gen) - gramMatrix(content)))
 
 def totalLoss(x):
-    a = K.square(x[:, :, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1] - x[:, :, 1:, :CONTENT_IMG_H - 1])
-    b = K.square(x[:, :, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1] - x[:, :, :CONTENT_IMG_W - 1, 1:])
+    if (K.image_data_format() == 'channels_first'):
+        a = K.square(x[:, :, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1] - x[:, :, 1:, :CONTENT_IMG_H - 1])
+        b = K.square(x[:, :, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1] - x[:, :, :CONTENT_IMG_W - 1, 1:])
+    else: 
+        a = K.square(x[:, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1, :] - x[:, 1:, :CONTENT_IMG_H - 1, :])
+        b = K.square(x[:, :CONTENT_IMG_W - 1, :CONTENT_IMG_H - 1, :] - x[:, :CONTENT_IMG_W - 1, 1:, :])
     return K.sum(K.pow(a + b, 1.25))
-    # TODO: Understand this ^^^^^
 
 # ============================= < Pipeline Functions > ============================= #
 
@@ -101,14 +104,6 @@ def preprocessData(raw):
     img = np.expand_dims(img, axis=0)
     img = vgg19.preprocess_input(img)
     return img
-
-def f_minLoss():
-    # TODO: Implement this
-    return 
-
-def f_minGrads():
-    # TODO: Implement this
-    return
 
 '''
 TODO: Allot of stuff needs to be implemented in this function.
@@ -145,7 +140,7 @@ def styleTransfer(cData, sData, tData):
     # we do style loss here
     print("   Calculating style loss.")
     for layerName in styleLayerNames:
-        layer = outputDict[styleLayerNames]
+        layer = outputDict[layerName]
         styleOutput = layer[1, :, :, :]
         genOutput = layer[2, :, :, :]
         w = STYLE_WEIGHT / len(styleLayerNames)
@@ -156,16 +151,31 @@ def styleTransfer(cData, sData, tData):
     
     # Setup gradients or use K.gradients() -- maybe I'm writing ok code
     gradients = K.gradients(loss, genTensor)
+    fOut = [loss]
+    
+    if isinstance(gradients, (list, tuple)):
+        fOut += gradients
+    else:
+        fOut.append(gradients)
+    #print(fOut)
+    #fOut = tf.convert_to_tensor(fOut)
+    outputs = K.function([genTensor], fOut)
 
-    outputs = K.function([genTensor], [loss].append(grads))
+    def f_minGrads(x):
+        out = outputs([x.reshape((1, CONTENT_IMG_W, CONTENT_IMG_H, 3))])
+        return np.array(out[1:]).flatten().astype('float64')
+
+    def f_minLoss(x):
+        out = outputs([x.reshape((1, CONTENT_IMG_W, CONTENT_IMG_H, 3))])
+        return out[0]
 
     # This loop is done
     print("   Beginning transfer.")
-    imgData = tData.copy()
+    imgData = cData.copy()
     for i in range(TRANSFER_ROUNDS):
         print("   Step %d." % i)
         
-        minEst, minVal, infoDict = fmin_l_bfgs_b(f_minLoss, tData.flatten(), fprime=f_minGrads, maxfun=20)
+        minEst, minVal, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20)
         print("      Loss: %f." % tLoss)
         img = deprocessImage(imgData.copy())
         saveFile = FINAL_IMG_FILE + '_' + i + '.jpg'
