@@ -175,7 +175,7 @@ def styleTransfer(cData, sData, tData):
     for i in range(TRANSFER_ROUNDS):
         print("   Step %d." % i)
         
-        minEst, minVal, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20)
+        minEst, tLoss, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20)
         print("      Loss: %f." % tLoss)
         img = deprocessImage(imgData.copy())
         saveFile = FINAL_IMG_FILE + '_' + i + '.jpg'
