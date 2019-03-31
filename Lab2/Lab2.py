@@ -19,8 +19,13 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 CONTENT_IMG_PATH = "content_img/utahSkiLandscape.jpg" 
-STYLE_IMG_PATH = "style_img/starryNight.jpg"
-FINAL_IMG_FILE = 'output_img/starryNight_UtahSkiLandscape'
+#CONTENT_IMG_PATH = "content_img/boston.jpg" 
+#STYLE_IMG_PATH = "style_img/starryNight.jpg"
+STYLE_IMG_PATH = "style_img/grandCanal.jpg"
+#FINAL_IMG_FILE = 'output_img_a000001/starryNight_boston'
+FINAL_IMG_FILE = 'output_img_a000001/grandCanal_UtahSkiLandscape'
+#FINAL_IMG_FILE = 'output_img_a000001/starryNight_UtahSkiLandscape'
+#FINAL_IMG_FILE = 'output_img_a0001/starryNight_boston'
 
 
 CONTENT_IMG_H = 500
@@ -29,11 +34,11 @@ CONTENT_IMG_W = 500
 STYLE_IMG_H = 500
 STYLE_IMG_W = 500
 
-CONTENT_WEIGHT = 0.1    # Alpha weight.
-STYLE_WEIGHT = 1.0      # Beta weight.
+CONTENT_WEIGHT = 0.000001    # Alpha weight.
+STYLE_WEIGHT = 1.0         # Beta weight.
 TOTAL_WEIGHT = 1.0
 
-TRANSFER_ROUNDS = 3
+TRANSFER_ROUNDS = 10
 
 
 # ============================= < Helper Fuctions > ============================= #
@@ -123,7 +128,7 @@ def styleTransfer(cData, sData, tData):
     inputTensor = K.concatenate([contentTensor, styleTensor, genTensor], axis=0)
     # Give it to the model
     model = vgg19.VGG19(include_top=False, weights='imagenet', input_tensor=inputTensor)
-    # Gett the layers
+    # Get the layers
     outputDict = dict([(layer.name, layer.output) for layer in model.layers])
     print("   VGG19 model loaded.")
     
@@ -136,7 +141,7 @@ def styleTransfer(cData, sData, tData):
     contentLayer = outputDict[contentLayerName]
     contentOutput = contentLayer[0, :, :, :]
     genOutput = contentLayer[2, :, :, :]
-    loss += CONTENT_WEIGHT * contentLoss(contentOutput, genOutput) # I dunno if this is right --- OK I think it is
+    loss += CONTENT_WEIGHT * contentLoss(contentOutput, genOutput) 
     # we do style loss here
     print("   Calculating style loss.")
     for layerName in styleLayerNames:
@@ -144,12 +149,12 @@ def styleTransfer(cData, sData, tData):
         styleOutput = layer[1, :, :, :]
         genOutput = layer[2, :, :, :]
         w = STYLE_WEIGHT / len(styleLayerNames)
-        layerLoss = styleLoss(styleOutput, genOutput) #hmmmmmmmmmmmmmmmmm we are thinking, loading, processing
-        loss += w * layerLoss # Fingers crossed
+        layerLoss = styleLoss(styleOutput, genOutput) 
+        loss += w * layerLoss 
     # and here we do total loss
-    loss += TOTAL_WEIGHT * totalLoss(genTensor)  # OK WE ARE MAKING PROGRESS
+    loss += TOTAL_WEIGHT * totalLoss(genTensor)  
     
-    # Setup gradients or use K.gradients() -- maybe I'm writing ok code
+    # Setup gradients or use K.gradients() 
     gradients = K.gradients(loss, genTensor)
     fOut = [loss]
     
@@ -175,7 +180,7 @@ def styleTransfer(cData, sData, tData):
     for i in range(TRANSFER_ROUNDS):
         print("   Step %d." % i)
         
-        minEst, tLoss, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20)
+        imgData, tLoss, infoDict = fmin_l_bfgs_b(f_minLoss, imgData.flatten(), fprime=f_minGrads, maxfun=20, maxiter=20)
         print("      Loss: %f." % tLoss)
         img = deprocessImage(imgData.copy())
         saveFile = FINAL_IMG_FILE + '_%d' % i + '.jpg'
